@@ -12,16 +12,18 @@ jobs:
       actions: write
 
     steps:
+      # ✅ 레포 체크아웃
       - name: Checkout Leetcode-Python repo
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      # ✅ Python 문제 파일 수 계산 (문제 폴더만 포함, 관리폴더 제외)
       - name: Count only new Python files
         id: count
         run: |
-          total_py=$(find . -type f -name "*.py" | wc -l)
+          total_py=$(find . -type f -name "*.py" ! -path "./.github/*" ! -path "./stats.json" | wc -l)
           prev_total=$(grep -Eo '[0-9]+$' README.md | tail -1)
           [ -z "$prev_total" ] && prev_total=0
           added=$((total_py - prev_total))
@@ -31,6 +33,7 @@ jobs:
           echo "total_py=$total_py" >> $GITHUB_ENV
           echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
+      # ✅ README 내 Progress Log 자동 업데이트
       - name: Update Progress Log in Leetcode-Python README
         run: |
           sed -i '/# 📈 Progress Log/,$d' README.md
@@ -51,6 +54,7 @@ jobs:
           echo "" >> README.md
           echo "> **🎯 Total:** $total_count problems solved" >> README.md
 
+      # ✅ 자동 커밋 & 푸시
       - name: Commit and push to Leetcode-Python
         run: |
           git config user.name "github-actions"
@@ -63,6 +67,7 @@ jobs:
             echo "✅ No new updates."
           fi
 
+      # ✅ 메인 프로필 README에도 반영
       - name: Update main profile README
         env:
           PROFILE_TOKEN: ${{ secrets.PROFILE_UPDATE_TOKEN_PY }}
