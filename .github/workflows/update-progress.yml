@@ -1,0 +1,41 @@
+name: Update Progress Log
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-progress:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Leetcode-Python repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # 전체 커밋 기록 가져오기
+
+      - name: Count only new Python files
+        id: count
+        run: |
+          total_py=$(find . -type f -name "*.py" | wc -l)
+          prev_total=$(grep -Eo '[0-9]+$' README.md | tail -1)
+          [ -z "$prev_total" ] && prev_total=0
+          added=$((total_py - prev_total))
+          [ $added -lt 0 ] && added=0
+
+          echo "added=$added" >> $GITHUB_ENV
+          echo "total_py=$total_py" >> $GITHUB_ENV
+          echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Update Progress Log in README
+        run: |
+          sed -i '/# 📈 Progress Log/,$!b; /# 📈 Progress Log/{n; a\
+| ${{ env.today }} | ${{ env.added }} | ${{ env.total_py }} |
+}' README.md
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "📈 Updated Progress Log on ${{ env.today }}" || echo "No changes to commit"
+          git push
