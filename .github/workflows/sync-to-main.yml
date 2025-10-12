@@ -1,0 +1,47 @@
+name: Sync Python Progress to Main README
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync-progress:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Leetcode-Python repo
+        uses: actions/checkout@v3
+
+      - name: Get progress section from Leetcode-Python README
+        id: extract
+        run: |
+          # 📈 Progress Log 부분 전체 추출
+          awk '/# 📈 Progress Log/{flag=1;print;next}/🎯 Total/{print;flag=0}flag' README.md > progress_section.txt
+          echo "section<<EOF" >> $GITHUB_ENV
+          cat progress_section.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Checkout Main Profile Repo
+        uses: actions/checkout@v3
+        with:
+          repository: rachel-kim2255/rachel-kim2255
+          token: ${{ secrets.PERSONAL_TOKEN }} # ✅ personal access token 필요
+          path: mainrepo
+
+      - name: Update Python Progress section in main README
+        run: |
+          cd mainrepo
+          awk -v section="${{ env.section }}" '
+            /<!-- START PYTHON PROGRESS -->/ {print;print section;found=1;next}
+            /<!-- END SQL PROGRESS -->/ {found=0}
+            !found
+          ' README.md > tmp && mv tmp README.md
+
+      - name: Commit and push changes to main profile
+        run: |
+          cd mainrepo
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "🔄 Sync Python Progress from Leetcode-Python" || echo "No changes to commit"
+          git push
