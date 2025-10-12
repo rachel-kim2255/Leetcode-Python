@@ -7,14 +7,17 @@ on:
 jobs:
   update-progress:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+
     steps:
-      # 1️⃣ 레포지토리 체크아웃
       - name: Checkout Leetcode-Python repo
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # 전체 커밋 불러오기
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 2️⃣ 새로운 Python 파일 수 카운트
       - name: Count only new Python files
         id: count
         run: |
@@ -28,7 +31,6 @@ jobs:
           echo "total_py=$total_py" >> $GITHUB_ENV
           echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
-      # 3️⃣ README.md 내 Progress Log 업데이트
       - name: Update Progress Log in Leetcode-Python README
         run: |
           sed -i '/# 📈 Progress Log/,$d' README.md
@@ -49,7 +51,6 @@ jobs:
           echo "" >> README.md
           echo "> **🎯 Total:** $total_count problems solved" >> README.md
 
-      # 4️⃣ 변경사항 커밋 및 푸시
       - name: Commit and push to Leetcode-Python
         run: |
           git config user.name "github-actions"
@@ -62,19 +63,16 @@ jobs:
             echo "✅ No new updates."
           fi
 
-      # 5️⃣ 메인 프로필 레포 업데이트
       - name: Update main profile README
         env:
           PROFILE_TOKEN: ${{ secrets.PROFILE_UPDATE_TOKEN_PY }}
         run: |
-          # 🔹 프로필 레포 복제
           git clone https://rachel-kim2255:${PROFILE_TOKEN}@github.com/rachel-kim2255/rachel-kim2255.git profile-repo
           cd profile-repo
 
           start_marker="<!-- START PYTHON PROGRESS -->"
           end_marker="<!-- END PYTHON PROGRESS -->"
 
-          # 🔹 새 Progress 내용 생성
           tmp_progress=$(mktemp)
           {
             echo "<h3 align=\"left\">📈 Python-LeetCode Progress Log</h3>"
@@ -104,7 +102,6 @@ jobs:
 
           cd profile-repo
 
-          # 🔹 Progress 블록만 교체 (중복 삽입 방지)
           awk -v start="$start_marker" -v end="$end_marker" -v new="$(cat "$tmp_progress")" '
             BEGIN { in_block=0 }
             $0 ~ start { print start; print new; in_block=1; next }
@@ -113,7 +110,6 @@ jobs:
           ' README.md > tmpfile && mv tmpfile README.md
           rm "$tmp_progress"
 
-          # 🔹 커밋 & 푸시
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add README.md
