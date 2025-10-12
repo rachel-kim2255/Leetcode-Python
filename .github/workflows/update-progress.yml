@@ -11,7 +11,7 @@ jobs:
       - name: Checkout Leetcode-Python repo
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # 전체 커밋 기록 가져오기
+          fetch-depth: 0  # 전체 커밋 불러오기
 
       - name: Count only new Python files
         id: count
@@ -26,20 +26,91 @@ jobs:
           echo "total_py=$total_py" >> $GITHUB_ENV
           echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
-      - name: Update Progress Log in README
+      - name: Update Progress Log in Leetcode-Python README
         run: |
-          
-          sed -i '/# 📈 Progress Log/,$!b; /# 📈 Progress Log/{n; a\
-          | ${{ env.today }} | 🟢 ${{ env.added }} | ${{ env.total_py }} |
-          }' README.md
+          sed -i '/# 📈 Progress Log/,$d' README.md
+          echo "" >> README.md
+          echo "# 📈 Progress Log" >> README.md
+          echo "| Date | Problems Added | Total |" >> README.md
+          echo "|------|----------------|--------|" >> README.md
 
-          # 🎯 Total 숫자 갱신
-          sed -i "s/> **🎯 Total:** .*/> **🎯 Total:** ${{ env.total_py }} problems solved/" README.md
+          git log --reverse --pretty=format:"%ad" --date=short --diff-filter=A -- '*.py' \
+            | sort | uniq -c > tmp.log
 
-      - name: Commit and push changes
+          total_count=0
+          while read count date; do
+            total_count=$((total_count + count))
+            echo "| $date | 🟢 $count | $total_count |" >> README.md
+          done < tmp.log
+          rm tmp.log
+          echo "" >> README.md
+          echo "> **🎯 Total:** $total_count problems solved" >> README.md
+
+      - name: Commit and push to Leetcode-Python
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
           git add README.md
-          git commit -m "📈 Updated Progress Log on ${{ env.today }}" || echo "No changes to commit"
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto update Progress Log"
+            git push
+          else
+            echo "✅ No new updates."
+          fi
+
+      - name: Update main profile README
+        env:
+          PROFILE_TOKEN: ${{ secrets.PROFILE_UPDATE_TOKEN_PY }}
+        run: |
+          # 🔹 프로필 리포 복제
+          git clone https://rachel-kim2255:${PROFILE_TOKEN}@github.com/rachel-kim2255/rachel-kim2255.git profile-repo
+          cd profile-repo
+
+          start_marker="<!-- START PYTHON PROGRESS -->"
+          end_marker="<!-- END SQL PROGRESS -->"
+
+          # 🔹 새 Progress 내용 생성
+          tmp_progress=$(mktemp)
+          {
+            echo "<h3 align=\"left\">📈 Python-LeetCode Progress Log</h3>"
+            echo ""
+            echo "| Date | Problems Added | Total |"
+            echo "|------|----------------|--------|"
+          } > "$tmp_progress"
+
+          cd ..
+          git log --reverse --pretty=format:"%ad" --date=short --diff-filter=A -- '*.py' \
+            | sort | uniq -c > tmp.log
+
+          total_count=0
+          while read count date; do
+            total_count=$((total_count + count))
+            echo "| $date | 🟢 $count | $total_count |" >> "$tmp_progress"
+          done < tmp.log
+          rm tmp.log
+
+          {
+            echo ""
+            echo "> **🎯 Total:** $total_count problems solved"
+            echo ""
+            echo "🔗 [View full repository → Leetcode-Python](https://github.com/rachel-kim2255/Leetcode-Python)"
+            echo ""
+          } >> "$tmp_progress"
+
+          cd profile-repo
+
+          # 🔹 Progress 블록만 교체 (중복 삽입 방지)
+          awk -v start="$start_marker" -v end="$end_marker" -v new="$(cat "$tmp_progress")" '
+            BEGIN { in_block=0 }
+            $0 ~ start { print start; print new; in_block=1; next }
+            $0 ~ end { in_block=0; print end; next }
+            !in_block { print }
+          ' README.md > tmpfile && mv tmpfile README.md
+          rm "$tmp_progress"
+
+          # 🔹 커밋 & 푸시
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add README.md
+          git commit -m "✅ Safe replace Python Progress Block (no duplication, no deletion)"
           git push
