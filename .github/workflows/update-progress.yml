@@ -1,4 +1,5 @@
-name: Update Progress Log
+name: Update Progress Log (Python → Profile)
+
 on:
   push:
     branches:
@@ -7,121 +8,47 @@ on:
 jobs:
   update-progress:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      actions: write
 
     steps:
-      # ✅ 1️⃣ Leetcode-Python repo 체크아웃
       - name: Checkout Leetcode-Python repo
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      # ✅ 2️⃣ 새 Python 파일 수 계산 (문제 폴더만 포함, 관리 폴더 제외)
-      - name: Count only new Python files
+      - name: Count .py files inside problem folders
         id: count
         run: |
-          total_py=$(find $(pwd) -type f -name "*.py" ! -path "*/.github/*" ! -path "*/stats.json" ! -path "*/test.py" | wc -l)
+          total_py=$(find . -mindepth 2 -type f -name "*.py" | wc -l)
+          echo "total_py=$total_py" >> $GITHUB_ENV
+          echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Clone main profile repo
+        run: |
+          git clone https://github.com/rachelkim-2255/rachelkim-2255.git
+          cd rachelkim-2255
           prev_total=$(grep -Eo '[0-9]+$' README.md | tail -1)
           [ -z "$prev_total" ] && prev_total=0
           added=$((total_py - prev_total))
           [ $added -lt 0 ] && added=0
 
-          echo "added=$added" >> $GITHUB_ENV
-          echo "total_py=$total_py" >> $GITHUB_ENV
-          echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-
-      # ✅ 3️⃣ Leetcode-Python 레포의 README 업데이트
-      - name: Update Progress Log in Leetcode-Python README
-        run: |
-          sed -i '/# 📈 Progress Log/,$d' README.md
-          echo "" >> README.md
-          echo "# 📈 Progress Log" >> README.md
-          echo "| Date | Problems Added | Total |" >> README.md
-          echo "|------|----------------|--------|" >> README.md
-
-          git log --reverse --pretty=format:"%ad" --date=short --diff-filter=A -- '*.py' \
-            | sort | uniq -c > tmp.log
-
-          total_count=0
-          while read count date; do
-            total_count=$((total_count + count))
-            echo "| $date | 🟢 $count | $total_count |" >> README.md
-          done < tmp.log
-          rm tmp.log
-          echo "" >> README.md
-          echo "> **🎯 Total:** $total_count problems solved" >> README.md
-
-      # ✅ 4️⃣ Leetcode-Python repo 커밋 & 푸시
-      - name: Commit and push to Leetcode-Python
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add README.md
-          if ! git diff --cached --quiet; then
-            git commit -m "Auto update Progress Log"
-            git push
+          if grep -q '# 📈 Progress Log' README.md; then
+            sed -i "/# 📈 Progress Log/a | $today | $added | $total_py |" README.md
           else
-            echo "✅ No new updates."
+            cat <<EOF >> README.md
+
+          # 📈 Progress Log
+          | Date | Problems Added | Total |
+          |------|----------------|--------|
+          | $today | $added | $total_py |
+          EOF
           fi
 
-      # ✅ 5️⃣ 메인 프로필(rachel-kim2255) README 자동 반영
-      - name: Update main profile README
-        env:
-          PROFILE_TOKEN: ${{ secrets.PROFILE_UPDATE_TOKEN_PY }}
-        run: |
-          # 🔹 메인 프로필 리포 복제
-          git clone https://rachel-kim2255:${PROFILE_TOKEN}@github.com/rachel-kim2255/rachel-kim2255.git profile-repo
-          cd profile-repo
-
-          start_marker="<!-- START PYTHON PROGRESS -->"
-          end_marker="<!-- END PYTHON PROGRESS -->"
-
-          tmp_progress=$(mktemp)
-          {
-            echo "<h3 align=\"left\">📈 Python-LeetCode Progress Log</h3>"
-            echo ""
-            echo "| Date | Problems Added | Total |"
-            echo "|------|----------------|--------|"
-          } > "$tmp_progress"
-
-          cd ..
-          git log --reverse --pretty=format:"%ad" --date=short --diff-filter=A -- '*.py' \
-            | sort | uniq -c > tmp.log
-
-          total_count=0
-          while read count date; do
-            total_count=$((total_count + count))
-            echo "| $date | 🟢 $count | $total_count |" >> "$tmp_progress"
-          done < tmp.log
-          rm tmp.log
-
-          {
-            echo ""
-            echo "> **🎯 Total:** $total_count problems solved"
-            echo ""
-            echo "🔗 [View full repository → Leetcode-Python](https://github.com/rachel-kim2255/Leetcode-Python)"
-            echo ""
-          } >> "$tmp_progress"
-
-          cd profile-repo
-
-          awk -v start="$start_marker" -v end="$end_marker" -v new="$(cat "$tmp_progress")" '
-            BEGIN { in_block=0 }
-            $0 ~ start { print start; print new; in_block=1; next }
-            $0 ~ end { in_block=0; print end; next }
-            !in_block { print }
-          ' README.md > tmpfile && mv tmpfile README.md
-          rm "$tmp_progress"
-
           git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          git config user.email "github-actions@github.com"
           git add README.md
-          if ! git diff --cached --quiet; then
-            git commit -m "✅ Safe replace Python Progress Block (no duplication, no deletion)"
-            git push
-          else
-            echo "✅ No profile updates."
-          fi
+          git commit -m "Sync Python progress: $today | +$added problems (Total: $total_py)" || echo "No changes"
+
+      - name: Push update to main profile
+        run: |
+          cd rachelkim-2255
+          git push https://x-access-token:${{ secrets.PROFILE_UPDATE_TOKEN_PY }}@github.com/rachelkim-2255/rachelkim-2255.git main
