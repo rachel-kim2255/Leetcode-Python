@@ -28,9 +28,13 @@ jobs:
 
       - name: Update Progress Log in README
         run: |
+          
           sed -i '/# 📈 Progress Log/,$!b; /# 📈 Progress Log/{n; a\
-| ${{ env.today }} | ${{ env.added }} | ${{ env.total_py }} |
-}' README.md
+          | ${{ env.today }} | 🟢 ${{ env.added }} | ${{ env.total_py }} |
+          }' README.md
+
+          # 🎯 Total 숫자 갱신
+          sed -i "s/> **🎯 Total:** .*/> **🎯 Total:** ${{ env.total_py }} problems solved/" README.md
 
       - name: Commit and push changes
         run: |
