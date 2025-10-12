@@ -14,10 +14,11 @@ A collection of LeetCode questions to ace the coding interview! - Created using 
 <br>
 
 
+
 # 📈 Progress Log
 | Date | Problems Added | Total |
 |------|----------------|--------|
 | 2025-10-11 | 🟢 1 | 1 |
-| 2025-10-12 | 🟢 4 | 5 |
+| 2025-10-12 | 🟢 5 | 6 |
 
-> **🎯 Total:** 5 problems solved
+> **🎯 Total:** 6 problems solved
