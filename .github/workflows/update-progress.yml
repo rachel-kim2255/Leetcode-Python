@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:  # ✅ 수동 실행 버튼 활성화 (이 한 줄 추가)
 
 jobs:
   update-progress:
