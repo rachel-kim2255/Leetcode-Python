@@ -66,7 +66,9 @@ jobs:
         env:
           PROFILE_TOKEN: ${{ secrets.PROFILE_UPDATE_TOKEN_PY }}
         run: |
-          # 🔹 1. 메인 리포 복제
+          # 💬 🔹 1. 메인 리포 복제 전, credential 충돌 및 폴더 문제 방지
+          rm -rf profile-repo
+          git config --global --unset credential.helper || true
           git clone https://rachel-kim2255:${PROFILE_TOKEN}@github.com/rachel-kim2255/rachel-kim2255.git profile-repo
           cd profile-repo
 
