@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  # ✅ 수동 실행 버튼 활성화 (이 한 줄 추가)
+  workflow_dispatch:  # ✅ 수동 실행 버튼 활성화 (Actions에서 수동 실행 가능)
 
 jobs:
   update-progress:
@@ -29,12 +29,10 @@ jobs:
       # 3️⃣ Leetcode-Python README 업데이트
       - name: Update Python repo README
         run: |
-          # Progress Log 표 생성
           echo "# 📈 Progress Log" > tmp_readme
           echo "| Date | Problems Added | Total |" >> tmp_readme
           echo "|------|----------------|--------|" >> tmp_readme
 
-          # 날짜별 집계 (파일이 추가된 커밋 기준)
           git log --reverse --pretty=format:"%ad" --date=short --diff-filter=A -- '*.py' \
             | sort | uniq -c > tmp.log
 
@@ -48,7 +46,6 @@ jobs:
           echo "" >> tmp_readme
           echo "> **🎯 Total:** $total problems solved" >> tmp_readme
 
-          # 기존 README에 Progress Log 섹션 대체
           awk '
             BEGIN {printed=0}
             /^# 📈 Progress Log/ {system("cat tmp_readme"); printed=1; next}
@@ -67,9 +64,10 @@ jobs:
         env:
           PROFILE_TOKEN: ${{ secrets.PROFILE_UPDATE_TOKEN_PY }}
         run: |
-          # 💬 🔹 1. 메인 리포 복제 전, credential 충돌 및 폴더 문제 방지
+          # 🔹 1. 메인 리포 복제 전, credential 충돌 및 폴더 문제 방지
           rm -rf profile-repo
           git config --global --unset credential.helper || true
+          git config --global credential.helper store
           git clone https://rachel-kim2255:${PROFILE_TOKEN}@github.com/rachel-kim2255/rachel-kim2255.git profile-repo
           cd profile-repo
 
