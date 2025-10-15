@@ -22,33 +22,59 @@ jobs:
           echo "total_py=$total_py" >> $GITHUB_ENV
           echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
-      - name: Clone main profile repo
+      - name: Update main profile README safely
+        env:
+          PROFILE_TOKEN: ${{ secrets.PROFILE_UPDATE_TOKEN_PY }}
         run: |
-          git clone https://github.com/rachelkim-2255/rachelkim-2255.git
-          cd rachelkim-2255
-          prev_total=$(grep -Eo '[0-9]+$' README.md | tail -1)
-          [ -z "$prev_total" ] && prev_total=0
-          added=$((total_py - prev_total))
-          [ $added -lt 0 ] && added=0
+          # 🔹 프로필 리포 복제
+          git clone https://rachel-kim2255:${PROFILE_TOKEN}@github.com/rachel-kim2255/rachel-kim2255.git profile-repo
+          cd profile-repo
 
-          if grep -q '# 📈 Progress Log' README.md; then
-            sed -i "/# 📈 Progress Log/a | $today | $added | $total_py |" README.md
-          else
-            cat <<EOF >> README.md
+          start_marker="<!-- START PYTHON PROGRESS -->"
+          end_marker="<!-- END PYTHON PROGRESS -->"
 
-          # 📈 Progress Log
-          | Date | Problems Added | Total |
-          |------|----------------|--------|
-          | $today | $added | $total_py |
-          EOF
-          fi
+          # 🔹 새 Progress 내용 생성
+          tmp_progress=$(mktemp)
+          {
+            echo "<h3 align=\"left\">📈 Python-LeetCode Progress Log</h3>"
+            echo ""
+            echo "| Date | Problems Added | Total |"
+            echo "|------|----------------|--------|"
+          } > "$tmp_progress"
 
+          cd ..
+          git log --reverse --pretty=format:"%ad" --date=short --diff-filter=A -- '*.py' \
+            | sort | uniq -c > tmp.log
+
+          total_count=0
+          while read count date; do
+            total_count=$((total_count + count))
+            echo "| $date | 🟢 $count | $total_count |" >> "$tmp_progress"
+          done < tmp.log
+          rm tmp.log
+
+          {
+            echo ""
+            echo "> **🎯 Total:** $total_count problems solved"
+            echo ""
+            echo "🔗 [View full repository → Leetcode-Python](https://github.com/rachel-kim2255/Leetcode-Python)"
+            echo ""
+          } >> "$tmp_progress"
+
+          cd profile-repo
+
+          # 🔹 Progress 블록만 교체 (중복 삽입 방지)
+          awk -v start="$start_marker" -v end="$end_marker" -v new="$(cat "$tmp_progress")" '
+            BEGIN { in_block=0 }
+            $0 ~ start { print start; print new; in_block=1; next }
+            $0 ~ end { in_block=0; print end; next }
+            !in_block { print }
+          ' README.md > tmpfile && mv tmpfile README.md
+          rm "$tmp_progress"
+
+          # 🔹 커밋 & 푸시
           git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          git config user.email "actions@github.com"
           git add README.md
-          git commit -m "Sync Python progress: $today | +$added problems (Total: $total_py)" || echo "No changes"
-
-      - name: Push update to main profile
-        run: |
-          cd rachelkim-2255
-          git push https://x-access-token:${{ secrets.PROFILE_UPDATE_TOKEN_PY }}@github.com/rachelkim-2255/rachelkim-2255.git main
+          git commit -m "✅ Safe replace Python Progress Block (no duplication, no deletion)" || echo "⚠️ No changes to commit"
+          git push
