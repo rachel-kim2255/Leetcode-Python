@@ -20,11 +20,12 @@ A collection of LeetCode questions to ace the coding interview! - Created using 
 
 
 
+
 # 📈 Progress Log
 | Date | Problems Added | Total |
 |------|----------------|--------|
 | 2025-10-11 | 🟢 1 | 1 |
-| 2025-10-12 | 🟢 7 | 8 |
-| 2025-10-14 | 🟢 1 | 9 |
+| 2025-10-12 | 🟢 6 | 7 |
+| 2025-10-14 | 🟢 1 | 8 |
 
-> **🎯 Total:** 9 problems solved
+> **🎯 Total:** 8 problems solved
