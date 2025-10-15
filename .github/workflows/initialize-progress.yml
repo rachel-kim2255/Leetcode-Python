@@ -1,38 +1,45 @@
-name: Update Progress Log (Python → Profile)
+name: Initialize Full Progress Log (Python)
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  update-progress:
+  init-progress:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Leetcode-Python repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0   # ✅ 모든 git 이력 가져오기 (중요!)
 
-      - name: Count valid .py files
-        id: count
+      - name: Build initial progress log
         run: |
-          total_py=$(find . -type f -name "*.py" ! -path "*/.github/*" | wc -l)
-          echo "total_py=$total_py" >> $GITHUB_ENV
-          echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+          # 기존 Progress Log 제거
+          sed -i '/# 📈 Progress Log/,$d' README.md
 
-      - name: Update README
-        run: |
-          sed -i "/# 📈 Progress Log/a| ${{ env.today }} | +${{ env.total_py }} |" README.md
+          echo "" >> README.md
+          echo "# 📈 Progress Log" >> README.md
+          echo "| Date | Problems Added | Total |" >> README.md
+          echo "|------|----------------|--------|" >> README.md
+          
+          total=0
+          git log --reverse --pretty=format:"%ad" --date=short -- '**/*.py' | sort | uniq -c > tmp.log
 
-      - name: Commit and push changes
+          while read count date; do
+            total=$((total + count))
+            echo "| $date | 🟢 $count | $total |" >> README.md
+          done < tmp.log
+
+          echo "" >> README.md
+          echo "> **🎯 Total:** $total problems solved" >> README.md
+          rm tmp.log
+
+      - name: Commit and push
         run: |
           git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          git config user.email "actions@github.com"
           git add README.md
-          git commit -m "🔄 Update progress log: ${{ env.today }}"
-          git push origin main
+          git commit -m "Initialize full Progress Log (Python)"
+          git push
