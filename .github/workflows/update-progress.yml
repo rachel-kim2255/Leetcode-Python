@@ -4,86 +4,89 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  # ✅ 수동 실행 버튼 활성화 (Actions에서 수동 실행 가능)
+
+permissions:
+  contents: write
 
 jobs:
   update-progress:
     runs-on: ubuntu-latest
-
     steps:
-      # 1️⃣ Leetcode-Python 리포 체크아웃
+      # 1️⃣ Leetcode-Python 레포 체크아웃
       - name: Checkout Leetcode-Python repo
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # 전체 커밋 내역 (git log용)
+          fetch-depth: 0  # 전체 커밋 불러오기
 
-      # 2️⃣ 현재 존재하는 .py 파일만 카운트 (문제 폴더 내부만)
-      - name: Count valid .py files
+      # 2️⃣ 새로 추가된 .py 파일 개수 계산
+      - name: Count only new Python files
         id: count
         run: |
-          # 문제 폴더 내부의 .py 파일만 포함 (루트, .github 등 제외)
-          total_py=$(find . -mindepth 2 -maxdepth 2 -type f -name "*.py" ! -path "*/.github/*" | wc -l)
+          total_py=$(find . -type f -name "*.py" | wc -l)
+          prev_total=$(grep -Eo '[0-9]+$' README.md | tail -1)
+          [ -z "$prev_total" ] && prev_total=0
+          added=$((total_py - prev_total))
+          [ $added -lt 0 ] && added=0
+
+          echo "added=$added" >> $GITHUB_ENV
           echo "total_py=$total_py" >> $GITHUB_ENV
           echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
-      # 3️⃣ Leetcode-Python README 업데이트
-      - name: Update Python repo README
+      # 3️⃣ Progress Log 업데이트 (.py 기준)
+      - name: Update Progress Log in Leetcode-Python README
         run: |
-          echo "# 📈 Progress Log" > tmp_readme
-          echo "| Date | Problems Added | Total |" >> tmp_readme
-          echo "|------|----------------|--------|" >> tmp_readme
+          sed -i '/# 📈 Progress Log/,$d' README.md
+          echo "" >> README.md
+          echo "# 📈 Progress Log" >> README.md
+          echo "| Date | Problems Added | Total |" >> README.md
+          echo "|------|----------------|--------|" >> README.md
 
           git log --reverse --pretty=format:"%ad" --date=short --diff-filter=A -- '*.py' \
             | sort | uniq -c > tmp.log
 
-          total=0
+          total_count=0
           while read count date; do
-            total=$((total + count))
-            echo "| $date | 🟢 $count | $total |" >> tmp_readme
+            total_count=$((total_count + count))
+            echo "| $date | 🟢 $count | $total_count |" >> README.md
           done < tmp.log
           rm tmp.log
+          echo "" >> README.md
+          echo "> **🎯 Total:** $total_count problems solved" >> README.md
 
-          echo "" >> tmp_readme
-          echo "> **🎯 Total:** $total problems solved" >> tmp_readme
-
-          awk '
-            BEGIN {printed=0}
-            /^# 📈 Progress Log/ {system("cat tmp_readme"); printed=1; next}
-            printed==0 {print}
-          ' README.md > new_README && mv new_README README.md
-          rm tmp_readme
-
+      # 4️⃣ Leetcode-Python 레포 커밋 & 푸시
+      - name: Commit and push to Leetcode-Python
+        run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add README.md
-          git commit -m "🧮 Update Python repo progress log" || echo "⚠️ No changes to commit"
-          git push
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto update Python Progress Log"
+            git push
+          else
+            echo "✅ No new updates."
+          fi
 
-      # 4️⃣ 메인 프로필 리포 (rachel-kim2255) 업데이트
-      - name: Update main profile README safely
+      # 5️⃣ 프로필 리포지토리 업데이트 (rachel-kim2255)
+      - name: Update main profile README
         env:
           PROFILE_TOKEN: ${{ secrets.PROFILE_UPDATE_TOKEN_PY }}
         run: |
-          # 🔹 1. 메인 리포 복제 전, credential 충돌 및 폴더 문제 방지
-          rm -rf profile-repo
-          git config --global --unset credential.helper || true
-          git config --global credential.helper store
+          # 🔹 프로필 리포 복제
           git clone https://rachel-kim2255:${PROFILE_TOKEN}@github.com/rachel-kim2255/rachel-kim2255.git profile-repo
           cd profile-repo
 
           start_marker="<!-- START PYTHON PROGRESS -->"
           end_marker="<!-- END PYTHON PROGRESS -->"
 
-          # 🔹 2. 새 Progress 블록 생성
+          # 🔹 새 Progress 내용 생성
           tmp_progress=$(mktemp)
           {
-            echo "<h3 align=\"left\">📈 Python-LeetCode Progress Log</h3>"
+            echo "<h3 align=\"left\">🐍 Python-LeetCode Progress Log</h3>"
             echo ""
             echo "| Date | Problems Added | Total |"
             echo "|------|----------------|--------|"
           } > "$tmp_progress"
 
-          # 🔹 3. Python 리포 커밋 로그 기반으로 표 채우기
           cd ..
           git log --reverse --pretty=format:"%ad" --date=short --diff-filter=A -- '*.py' \
             | sort | uniq -c > tmp.log
@@ -103,8 +106,9 @@ jobs:
             echo ""
           } >> "$tmp_progress"
 
-          # 🔹 4. profile-repo로 복귀 후 블록 교체 (다른 섹션 절대 손대지 않음)
           cd profile-repo
+
+          # 🔹 Progress 블록만 교체 (중복 삽입 방지)
           awk -v start="$start_marker" -v end="$end_marker" -v new="$(cat "$tmp_progress")" '
             BEGIN { in_block=0 }
             $0 ~ start { print start; print new; in_block=1; next }
@@ -113,9 +117,9 @@ jobs:
           ' README.md > tmpfile && mv tmpfile README.md
           rm "$tmp_progress"
 
-          # 🔹 5. 커밋 & 푸시
+          # 🔹 커밋 & 푸시
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add README.md
-          git commit -m "✅ Safe replace Python Progress Block (no duplication, no deletion)" || echo "⚠️ No changes to commit"
+          git commit -m "✅ Safe replace Python Progress Block (no duplication, no deletion)"
           git push
