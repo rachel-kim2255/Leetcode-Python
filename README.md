@@ -18,11 +18,4 @@ A collection of LeetCode questions to ace the coding interview! - Created using 
 
 
 
-# 📈 Progress Log
-| 2025-10-15 | +3 |
-| Date | Problems Added | Total |
-|------|----------------|--------|
-| 2025-10-11 | 🟢 1 | 1 |
-| 2025-10-12 | 🟢 6 | 7 |
 
-> **🎯 Total:** 7 problems solved
