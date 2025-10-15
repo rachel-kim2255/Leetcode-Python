@@ -1,0 +1,38 @@
+name: Update Progress Log (Python → Profile)
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  update-progress:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Leetcode-Python repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Count valid .py files
+        id: count
+        run: |
+          total_py=$(find . -type f -name "*.py" ! -path "*/.github/*" | wc -l)
+          echo "total_py=$total_py" >> $GITHUB_ENV
+          echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Update README
+        run: |
+          sed -i "/# 📈 Progress Log/a| ${{ env.today }} | +${{ env.total_py }} |" README.md
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add README.md
+          git commit -m "🔄 Update progress log: ${{ env.today }}"
+          git push origin main
