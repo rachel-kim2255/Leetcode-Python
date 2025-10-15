@@ -18,29 +18,27 @@ jobs:
         with:
           fetch-depth: 0  # 전체 커밋 불러오기
 
-      # 2️⃣ 새로 추가된 .py 파일 개수 계산
-      - name: Count only new Python files
+      # 2️⃣ 현재 존재하는 .py 파일 개수 계산 (정확한 실제 개수)
+      - name: Count total Python problems
         id: count
         run: |
-          total_py=$(find . -type f -name "*.py" | wc -l)
-          prev_total=$(grep -Eo '[0-9]+$' README.md | tail -1)
-          [ -z "$prev_total" ] && prev_total=0
-          added=$((total_py - prev_total))
-          [ $added -lt 0 ] && added=0
-
-          echo "added=$added" >> $GITHUB_ENV
+          total_py=$(find . -type f -name "*.py" ! -path "*/.github/*" | wc -l)
           echo "total_py=$total_py" >> $GITHUB_ENV
           echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
-      # 3️⃣ Progress Log 업데이트 (.py 기준)
+      # 3️⃣ Progress Log 갱신 (.py 기준)
       - name: Update Progress Log in Leetcode-Python README
         run: |
+          # 📄 기존 Progress Log 제거
           sed -i '/# 📈 Progress Log/,$d' README.md
+
+          # 🧱 표 헤더 재작성
           echo "" >> README.md
           echo "# 📈 Progress Log" >> README.md
           echo "| Date | Problems Added | Total |" >> README.md
           echo "|------|----------------|--------|" >> README.md
-
+          
+          # 📅 날짜별로 새 파일이 추가된 날 계산 (최초 커밋 날짜 기준)
           git log --reverse --pretty=format:"%ad" --date=short --diff-filter=A -- '*.py' \
             | sort | uniq -c > tmp.log
 
@@ -50,8 +48,10 @@ jobs:
             echo "| $date | 🟢 $count | $total_count |" >> README.md
           done < tmp.log
           rm tmp.log
+
+          # ✅ 총합 표시 (현재 레포의 실제 .py 파일 수 반영)
           echo "" >> README.md
-          echo "> **🎯 Total:** $total_count problems solved" >> README.md
+          echo "> **🎯 Total:** ${{ env.total_py }} problems solved" >> README.md
 
       # 4️⃣ Leetcode-Python 레포 커밋 & 푸시
       - name: Commit and push to Leetcode-Python
@@ -60,7 +60,7 @@ jobs:
           git config user.email "actions@github.com"
           git add README.md
           if ! git diff --cached --quiet; then
-            git commit -m "Auto update Python Progress Log"
+            git commit -m "Auto update Python Progress Log (accurate count)"
             git push
           else
             echo "✅ No new updates."
@@ -100,7 +100,7 @@ jobs:
 
           {
             echo ""
-            echo "> **🎯 Total:** $total_count problems solved"
+            echo "> **🎯 Total:** ${{ env.total_py }} problems solved"
             echo ""
             echo "🔗 [View full repository → Leetcode-Python](https://github.com/rachel-kim2255/Leetcode-Python)"
             echo ""
@@ -121,5 +121,5 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add README.md
-          git commit -m "✅ Safe replace Python Progress Block (no duplication, no deletion)"
+          git commit -m "✅ Safe replace Python Progress Block (accurate count)"
           git push
