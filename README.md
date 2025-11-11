@@ -53,6 +53,7 @@ A collection of LeetCode questions to ace the coding interview! - Created using 
 
 
 
+
 # 📈 Progress Log
 | Date | Problems Added | Total |
 |------|----------------|--------|
@@ -61,6 +62,6 @@ A collection of LeetCode questions to ace the coding interview! - Created using 
 | 2025-10-14 | 🟢 1 | 8 |
 | 2025-10-20 | 🟢 3 | 11 |
 | 2025-11-10 | 🟢 5 | 16 |
-| 2025-11-11 | 🟢 1 | 17 |
+| 2025-11-11 | 🟢 2 | 18 |
 
-> **🎯 Total:** 12 problems solved
+> **🎯 Total:** 13 problems solved
