@@ -1,3 +1,8 @@
+# LEARN:
+# pd.to_datetime() → converts a string into a datetime object
+# shift(1) → retrieves the value from the previous row
+# result = weather[(Condition A) & (Condition B)][['id']] → keeps only the rows that meet both conditions, and extracts the id column in a DataFrame format
+
 import pandas as pd
 
 def rising_temperature(weather: pd.DataFrame) -> pd.DataFrame:
