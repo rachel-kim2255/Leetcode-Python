@@ -18,6 +18,7 @@ A collection of LeetCode questions to ace the coding interview! - Created using 
 | [0596-classes-with-at-least-5-students](https://github.com/rachel-kim2255/Leetcode-Python/tree/master/0596-classes-with-at-least-5-students) |
 | [0607-sales-person](https://github.com/rachel-kim2255/Leetcode-Python/tree/master/0607-sales-person) |
 | [0610-triangle-judgement](https://github.com/rachel-kim2255/Leetcode-Python/tree/master/0610-triangle-judgement) |
+| [0619-biggest-single-number](https://github.com/rachel-kim2255/Leetcode-Python/tree/master/0619-biggest-single-number) |
 | [1179-game-play-analysis-i](https://github.com/rachel-kim2255/Leetcode-Python/tree/master/1179-game-play-analysis-i) |
 <!---LeetCode Topics End-->
 
