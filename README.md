@@ -24,6 +24,7 @@ A collection of LeetCode questions to ace the coding interview! - Created using 
 | [0627-swap-sex-of-employees](https://github.com/rachel-kim2255/Leetcode-Python/tree/master/0627-swap-sex-of-employees) |
 | [1179-game-play-analysis-i](https://github.com/rachel-kim2255/Leetcode-Python/tree/master/1179-game-play-analysis-i) |
 | [1301-reformat-department-table](https://github.com/rachel-kim2255/Leetcode-Python/tree/master/1301-reformat-department-table) |
+| [1581-customer-who-visited-but-did-not-make-any-transactions](https://github.com/rachel-kim2255/Leetcode-Python/tree/master/1581-customer-who-visited-but-did-not-make-any-transactions) |
 <!---LeetCode Topics End-->
 
 <br>
