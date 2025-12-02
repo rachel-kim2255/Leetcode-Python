@@ -4,12 +4,9 @@
 import pandas as pd
 
 def find_customers(customers: pd.DataFrame, orders: pd.DataFrame) -> pd.DataFrame:
-    y_order = orders['customerId'].unique()
-    n_order = customers[~customers['id'].isin(y_order)]
-    n_order = n_order[['name']]
-    n_order.columns = ['Customers']
-    
-    return n_order
+    customers = customers.merge(orders, how='left', left_on='id', right_on='customerId')
+    customers = customers[customers['id_y'].isna()]
+    return customers.rename(columns={'name':'Customers'})[['Customers']]
 
 
 
