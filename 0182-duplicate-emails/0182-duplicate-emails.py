@@ -1,7 +1,12 @@
 import pandas as pd
 
 def duplicate_emails(person: pd.DataFrame) -> pd.DataFrame:
-    duplicated = person.groupby('email').size().reset_index(name='count')
-    duplicated = duplicated[duplicated['count'] > 1][['email']]
-    duplicated.columns = ['Email']
-    return duplicated
+    df = person.groupby('email')['email'].agg(
+        count = 'count'
+    ).reset_index()
+    df = df[df['count'] > 1]
+    df = df.rename(columns={'email':'Email'})
+    return df[['Email']]
+
+
+
