@@ -1,9 +1,10 @@
 import pandas as pd
 
 def find_employees(employee: pd.DataFrame) -> pd.DataFrame:
-    merged = employee.merge(employee, left_on = 'managerId', right_on ="id", suffixes=('', '_manager'))
-    result = merged[merged['salary'] > merged['salary_manager']][['name']]
-    result.rename(columns={'name': 'Employee'}, inplace=True)
-    return result
-
+    employee = employee.merge(employee, how='left', left_on='managerId', right_on='id')
+    filtered = (employee['managerId_x'] != 'null') & (employee['salary_x'] > employee['salary_y'])
+    employee = employee[filtered]
+    employee = employee.rename(columns = {'name_x': 'Employee'})
+    return employee[['Employee']]
+  
 
