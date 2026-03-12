@@ -39,7 +39,7 @@ jobs:
           echo "|------|----------------|--------|" >> README.md
           
           # 📅 날짜별로 새 파일이 추가된 날 계산 (최초 커밋 날짜 기준)
-          git log --reverse --pretty=format:"%ad" --date=short --diff-filter=A -- '*.py' \
+          git log --reverse --pretty=format:"%ad" --date=short --diff-filter=AM -- '*.py' \
             | sort | uniq -c > tmp.log
 
           total_count=0
@@ -88,7 +88,7 @@ jobs:
           } > "$tmp_progress"
 
           cd ..
-          git log --reverse --pretty=format:"%ad" --date=short --diff-filter=A -- '*.py' \
+          git log --reverse --pretty=format:"%ad" --date=short --diff-filter=AM -- '*.py' \
             | sort | uniq -c > tmp.log
 
           total_count=0
