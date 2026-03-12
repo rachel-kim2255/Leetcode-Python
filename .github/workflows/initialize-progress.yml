@@ -25,7 +25,8 @@ jobs:
           echo "|------|----------------|--------|" >> README.md
           
           total=0
-          git log --reverse --pretty=format:"%ad" --date=short -- '**/*.py' | sort | uniq -c > tmp.log
+          git log --reverse --pretty=format:"%ad" --date=short --diff-filter=AM -- '*.py' | sort | uniq -c > tmp.log
+
 
           while read count date; do
             total=$((total + count))
